@@ -1,0 +1,3 @@
+rootProject.name = 'event-selector-dataset'
+include 'resource-dataset'
+

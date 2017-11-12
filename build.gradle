@@ -1,0 +1,158 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
+    }
+}
+
+plugins {
+    id 'net.researchgate.release' version '2.6.0'
+    id 'com.github.hierynomus.license' version '0.14.0'
+    id 'io.codearte.nexus-staging' version '0.9.0'
+    id 'org.dm.bundle' version '0.10.0'
+}
+
+ext {
+    name = 'Camel Event Selector'
+    description = 'A Camel LDP implementation'
+    vendor = 'pandorasystems'
+    homepage = 'http://www.trellisldp.org'
+    url = 'http://www.trellisldp.org/apidocs'
+    license = 'Apache 2'
+    inceptionYear = '2017'
+}
+
+configurations {
+    buildToolsConfig
+}
+
+dependencies {
+    buildToolsConfig "cool.pandora:pandora-build-tools:0.1.3"
+}
+
+task processBuildTools(type: Copy) {
+    from {
+        configurations.buildToolsConfig.collect {
+            zipTree(it).matching {
+                include 'checkstyle/*.xml'
+                include 'license/*.txt'
+            }
+        }
+    }
+    into 'build'
+}
+
+configure(allprojects) { project ->
+    apply plugin: 'application'
+    apply plugin: 'checkstyle'
+    apply plugin: 'maven'
+    apply plugin: 'java'
+    apply plugin: 'java-library'
+    apply plugin: 'org.dm.bundle'
+    apply plugin: 'com.github.hierynomus.license'
+
+    group = 'org.trellisldp.camel.selector'
+    mainClassName = 'org.trellisldp.camel.selector.Selector'
+
+    repositories {
+        jcenter()
+        mavenCentral()
+        mavenLocal()
+    }
+
+    compileJava {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+        options.encoding = 'UTF-8'
+    }
+
+    compileTestJava {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+        options.encoding = 'UTF-8'
+        options.compilerArgs += "-parameters"
+    }
+
+    ext {
+        /* Dependencies */
+        camelVersion = '2.20.0'
+        camelLdpVersion = '0.1.0-SNAPSHOT'
+        commonsIoVersion = "2.5"
+        commonsLangVersion = "3.5"
+        commonsCsvVersion = "1.4"
+        commonsRdfJenaVersion = "0.3.0-incubating"
+        commonsRdfVersion = '0.3.0-incubating'
+        dexxcollectionVersion = '0.6'
+        guavaVersion = "20.0"
+        httpclientVersion = "4.5.3"
+        httpcoreVersion = "4.4.6"
+        jacksonVersion = "2.9.0"
+        jsonldVersion = "0.11.1"
+        thriftVersion = "0.9.3"
+        trellisApiVersion = "0.3.0"
+        trellisIoJenaVersion = '0.2.1'
+        trellisVocabularyVersion = '0.1.0'
+        /* Testing */
+        junitVersion = '5.0.1'
+        junitPlatformVersion = '1.0.1'
+        jaxbVersion = '2.3.0'
+        jacocoVersion = '0.7.9'
+        jenaVersion = '3.5.0'
+        activationVersion = '1.1.1'
+        logbackVersion = '1.2.3'
+        apiguardianVersion = '1.0.0'
+        trellisIoJenaVersion = '0.2.1'
+
+        /* OSGi */
+        camelVersionRange = '[2.16,3)'
+        projectOsgiVersion = project.version.replaceAll("-SNAPSHOT", ".SNAPSHOT")
+        defaultOsgiImports = 'org.osgi.service.blueprint;version="[1,2)",*'
+    }
+
+    license {
+        include "**/*.java"
+        header rootProject.file('build/license/HEADER.txt')
+        strictCheck true
+        mapping {
+            java = 'SLASHSTAR_STYLE'
+        }
+    }
+
+    checkstyle {
+        configFile = rootProject.file('build/checkstyle/checkstyle.xml')
+        configProperties.checkstyleConfigDir = rootProject.file('build/checkstyle/')
+        toolVersion = '8.1'
+    }
+
+    checkstyleMain.dependsOn processBuildTools
+}
+
+project("resource-dataset") {
+    description = 'A Camel service that puts resources into a dataset by querying events'
+    dependencies {
+        compile group: 'org.apache.jena', name: 'jena-osgi', version: jenaVersion
+        compile group: 'org.apache.jena', name: 'jena-fuseki-embedded', version: '3.5.0'
+        compile group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisIoJenaVersion
+        compile group: 'org.apache.camel', name: 'camel-jetty9', version: camelVersion
+        compile group: 'org.apache.camel', name: 'camel-http4', version: camelVersion
+        compile group: 'javax.xml.bind', name: 'jaxb-api', version: jaxbVersion
+        compile group: 'javax.activation', name: 'activation', version: '1.1.1'
+        compile group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
+        testImplementation group: 'org.apache.jena', name: 'jena-osgi', version: jenaVersion
+        testImplementation group: 'org.apache.jena', name: 'jena-fuseki-embedded', version: '3.5.0'
+        testImplementation group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisIoJenaVersion
+        testImplementation group: 'org.apiguardian', name: 'apiguardian-api', version: apiguardianVersion
+        testImplementation group: 'org.junit.platform', name: 'junit-platform-runner', version: junitPlatformVersion
+        testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junitVersion
+        testImplementation group: 'org.apache.camel', name: 'camel-test', version: camelVersion
+        testImplementation group: 'org.apache.camel', name: 'camel-jetty9', version: camelVersion
+        testImplementation group: 'org.apache.camel', name: 'camel-http4', version: camelVersion
+        testImplementation group: 'javax.xml.bind', name: 'jaxb-api', version: jaxbVersion
+        testImplementation group: 'javax.activation', name: 'activation', version: '1.1.1'
+        testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
+        testImplementation group: 'org.apache.camel', name: 'camel-test-blueprint', version: camelVersion
+    }
+}
