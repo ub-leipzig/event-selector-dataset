@@ -45,7 +45,7 @@ public class ResourceMessageList {
         List<Message> resList = new ArrayList<>();
         InputStream is = new ByteArrayInputStream(body.getBytes());
         final JenaGraph graph = rdf.createGraph();
-        service.read(is, null, NTRIPLES).forEach(graph::add);
+        service.read(is, null, NTRIPLES).forEachOrdered(graph::add);
         graph.stream(null, RDF.type, null).forEach(t -> {
             DefaultMessage message = new DefaultMessage(camelContext);
             String uri = ((IRI) t.getSubject()).getIRIString();

@@ -51,8 +51,6 @@ public class SelectorTest {
 
     private static final String SPARQL_QUERY = "type";
 
-    private static final String TRELLIS_RESOURCE = "CamelHttpUri";
-
     private static final String HTTP_ACCEPT = "Accept";
 
     private static final JenaRDF rdf = new JenaRDF();
@@ -101,7 +99,7 @@ public class SelectorTest {
                         .process(exchange -> {
                             final JenaGraph graph = rdf.createGraph();
                             service.read(exchange.getIn().getBody(InputStream.class), null,
-                                    NTRIPLES).forEach(graph::add);
+                                    NTRIPLES).forEachOrdered(graph::add);
                             try (RDFConnection conn = RDFConnectionFactory.connect(
                                     exchange.getIn().getHeader("fuseki.base").toString())) {
                                 Txn.executeWrite(conn, () -> {
