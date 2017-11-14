@@ -64,8 +64,6 @@ public class Selector {
 
         private static IOService service = new JenaIOService(null);
 
-        private static String SELECTOR_NAMED_GRAPH = "http://trellis:8080/selector";
-
         public void configure() {
 
             final PropertiesComponent pc =
@@ -104,7 +102,9 @@ public class Selector {
                         try (RDFConnection conn = RDFConnectionFactory.connect(
                                 exchange.getIn().getHeader("fuseki.base").toString())) {
                             Txn.executeWrite(conn, () -> {
-                                conn.load(SELECTOR_NAMED_GRAPH, graph.asJenaModel());
+                                conn.load(
+                                        exchange.getIn().getHeader("named.graph").toString(),
+                                        graph.asJenaModel());
                             });
                             conn.commit();
                         }

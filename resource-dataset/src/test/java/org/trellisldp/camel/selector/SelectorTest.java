@@ -81,6 +81,7 @@ public class SelectorTest {
                     e.getIn().setBody(sparqlConstruct(
                             Query.getEventQuery("events-type.rq", Query.getSet(e))));
                     LOGGER.info("Node type {}", e.getIn().getHeader("node").toString());
+                    e.getIn().setHeader("named.graph", e.getIn().getHeader("node").toString());
                 }).to("http4:{{fuseki.base}}?useSystemProperties=true&bridgeEndpoint=true")
                         .filter(header(HTTP_RESPONSE_CODE).isEqualTo(200)).setHeader(CONTENT_TYPE)
                         .constant(contentTypeNTriples).convertBodyTo(String.class)
@@ -103,7 +104,9 @@ public class SelectorTest {
                             try (RDFConnection conn = RDFConnectionFactory.connect(
                                     exchange.getIn().getHeader("fuseki.base").toString())) {
                                 Txn.executeWrite(conn, () -> {
-                                    conn.load(graph.asJenaModel());
+                                    conn.load(
+                                            exchange.getIn().getHeader("named.graph").toString(),
+                                            graph.asJenaModel());
                                 });
                                 conn.commit();
                             }

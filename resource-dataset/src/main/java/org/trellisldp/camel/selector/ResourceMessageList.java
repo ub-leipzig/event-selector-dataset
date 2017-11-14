@@ -18,6 +18,8 @@ import static org.apache.commons.rdf.api.RDFSyntax.NTRIPLES;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.camel.Body;
@@ -49,6 +51,13 @@ public class ResourceMessageList {
         graph.stream(null, RDF.type, null).forEach(t -> {
             DefaultMessage message = new DefaultMessage(camelContext);
             String uri = ((IRI) t.getSubject()).getIRIString();
+            String type = null;
+            try {
+                type = URLEncoder.encode(((IRI) t.getObject()).getIRIString(), "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            message.setHeader("named.graph",type);
             message.setHeader("CamelHttpUri", uri);
             resList.add(message);
         });

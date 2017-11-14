@@ -1,1 +1,1 @@
-CONSTRUCT {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <?node>} WHERE {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <?node>}
+CONSTRUCT {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <?node>} WHERE {GRAPH <http://trellisldp.org/activitystream> {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <?node>}}
