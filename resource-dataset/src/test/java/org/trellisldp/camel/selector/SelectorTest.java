@@ -82,7 +82,7 @@ public class SelectorTest {
                             Query.getEventQuery("events-type.rq", Query.getSet(e))));
                     LOGGER.info("Node type {}", e.getIn().getHeader("node").toString());
                     e.getIn().setHeader("named.graph", e.getIn().getHeader("node").toString());
-                }).to("http4:{{fuseki.base}}?useSystemProperties=true&bridgeEndpoint=true")
+                }).to("http4:{{activitystream.base}}?useSystemProperties=true&bridgeEndpoint=true")
                         .filter(header(HTTP_RESPONSE_CODE).isEqualTo(200)).setHeader(CONTENT_TYPE)
                         .constant(contentTypeNTriples).convertBodyTo(String.class)
                         .log(INFO, LOGGER, "Getting query results as n-triples")
@@ -94,7 +94,7 @@ public class SelectorTest {
 
                 from("direct:update.dataset").routeId("DatasetUpdater").setHeader(HTTP_METHOD)
                         .constant("GET").setHeader(HTTP_ACCEPT).constant(contentTypeNTriples)
-                        .setHeader("fuseki.base", constant("http://{{fuseki.base}}"))
+                        .setHeader("resource.base", constant("http://{{resource.base}}"))
                         .to("http4:trellis:8080")
                         .log(INFO, LOGGER, "Indexing Subject " + "${headers[CamelHttpUri]}")
                         .process(exchange -> {
@@ -102,10 +102,10 @@ public class SelectorTest {
                             service.read(exchange.getIn().getBody(InputStream.class), null,
                                     NTRIPLES).forEachOrdered(graph::add);
                             try (RDFConnection conn = RDFConnectionFactory.connect(
-                                    exchange.getIn().getHeader("fuseki.base").toString())) {
+                                    exchange.getIn().getHeader("resource.base").toString())) {
                                 Txn.executeWrite(conn, () -> {
                                     conn.load(
-                                            exchange.getIn().getHeader("named.graph").toString(),
+                                            exchange.getIn().getHeader("CamelHttpUri").toString(),
                                             graph.asJenaModel());
                                 });
                                 conn.commit();

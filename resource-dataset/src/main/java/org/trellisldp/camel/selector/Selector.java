@@ -1,3 +1,17 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.trellisldp.camel.selector;
 
 import static java.net.URLEncoder.encode;
@@ -30,6 +44,14 @@ public class Selector {
     public static void main(String[] args) throws Exception {
         Selector selector = new Selector();
         selector.init();
+    }
+
+    private static String sparqlConstruct(final String command) {
+        try {
+            return "query=" + encode(command, "UTF-8");
+        } catch (final IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     private void init() throws Exception {
@@ -80,7 +102,7 @@ public class Selector {
                 e.getIn().setBody(sparqlConstruct(
                         Query.getEventQuery("events-type.rq", Query.getSet(e))));
                 LOGGER.info("Node type {}", e.getIn().getHeader("node").toString());
-            }).to("http4:{{fuseki.base}}?useSystemProperties=true&bridgeEndpoint=true")
+            }).to("http4:{{activitystream.base}}?useSystemProperties=true&bridgeEndpoint=true")
                     .filter(header(HTTP_RESPONSE_CODE).isEqualTo(200)).setHeader(CONTENT_TYPE)
                     .constant(contentTypeNTriples).convertBodyTo(String.class)
                     .log(INFO, LOGGER, "Getting query results as n-triples")
@@ -92,7 +114,7 @@ public class Selector {
 
             from("direct:update.dataset").routeId("DatasetUpdater").setHeader(HTTP_METHOD)
                     .constant("GET").setHeader(HTTP_ACCEPT).constant(contentTypeNTriples)
-                    .setHeader("fuseki.base", constant("http://{{fuseki.base}}"))
+                    .setHeader("resources.base", constant("http://{{resources.base}}"))
                     .to("http4:trellis:8080")
                     .log(INFO, LOGGER, "Indexing Subject " + "${headers[CamelHttpUri]}")
                     .process(exchange -> {
@@ -100,24 +122,16 @@ public class Selector {
                         service.read(exchange.getIn().getBody(InputStream.class), null,
                                 NTRIPLES).forEachOrdered(graph::add);
                         try (RDFConnection conn = RDFConnectionFactory.connect(
-                                exchange.getIn().getHeader("fuseki.base").toString())) {
+                                exchange.getIn().getHeader("resources.base").toString())) {
                             Txn.executeWrite(conn, () -> {
                                 conn.load(
-                                        exchange.getIn().getHeader("named.graph").toString(),
+                                        exchange.getIn().getHeader("CamelHttpUri").toString(),
                                         graph.asJenaModel());
                             });
                             conn.commit();
                         }
                         LOGGER.info("Committing Resource Body to Jena Dataset");
                     });
-        }
-    }
-
-    private static String sparqlConstruct(final String command) {
-        try {
-            return "query=" + encode(command, "UTF-8");
-        } catch (final IOException ex) {
-            throw new UncheckedIOException(ex);
         }
     }
 }
