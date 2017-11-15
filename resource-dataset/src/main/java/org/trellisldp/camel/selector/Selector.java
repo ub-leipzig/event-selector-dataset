@@ -104,7 +104,7 @@ public class Selector {
                 LOGGER.info("Node type {}", e.getIn().getHeader("node").toString());
             }).to("http4:{{activitystream.base}}?useSystemProperties=true&bridgeEndpoint=true")
                     .filter(header(HTTP_RESPONSE_CODE).isEqualTo(200)).setHeader(CONTENT_TYPE)
-                    .constant(contentTypeNTriples).convertBodyTo(String.class)
+                    .constant(contentTypeNTriples)
                     .log(INFO, LOGGER, "Getting query results as n-triples")
                     .to("direct:getEvents");
 

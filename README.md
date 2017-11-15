@@ -3,6 +3,14 @@
 An Apache Camel Jetty implementation that queries an [activity stream dataset](https://github.com/ub-leipzig/camel-kafka-activitystream-dataset), 
 fetches the target resource content from Trellis, and then writes the resource bodies to a Fuseki managed dataset as RDF.
 
+## Configuration
+If running outside of docker, add an entry in /etc/hosts to map "trellis" to the container IP address.
+To get this address run:
+
+```bash
+docker inspect trellis | grep IPAddress
+```
+
 ## Endpoint
 The query endpoint is exposed at `http://localhost:9095/events`
 

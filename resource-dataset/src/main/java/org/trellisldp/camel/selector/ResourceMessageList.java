@@ -40,13 +40,12 @@ public class ResourceMessageList {
 
     private static IOService service = new JenaIOService(null);
 
-    public List<Message> getResources(@Body String body, CamelContext camelContext) {
+    public List<Message> getResources(@Body InputStream body, CamelContext camelContext) {
 
         List<Message> resList = new ArrayList<>();
-        InputStream is = new ByteArrayInputStream(body.getBytes());
         final JenaGraph graph = rdf.createGraph();
-        service.read(is, null, NTRIPLES).forEachOrdered(graph::add);
-        graph.stream(null, RDF.type, null).forEach(t -> {
+        service.read(body, null, NTRIPLES).forEachOrdered(graph::add);
+        graph.stream().forEach(t -> {
             DefaultMessage message = new DefaultMessage(camelContext);
             String uri = ((IRI) t.getSubject()).getIRIString();
             message.setHeader("CamelHttpUri", uri);
