@@ -67,46 +67,65 @@ public class SelectorTest {
         camelContext.addRoutes(new RouteBuilder() {
             public void configure() {
 
-                final PropertiesComponent pc =
-                        getContext().getComponent("properties", PropertiesComponent.class);
+                final PropertiesComponent pc = getContext().getComponent("properties", PropertiesComponent.class);
                 pc.setLocation("classpath:application.properties");
 
                 from("jetty:http://{{rest.host}}:{{rest.port}}{{rest.prefix}}?"
                         + "optionsEnabled=true&matchOnUriPrefix=true&sendServerVersion=false"
-                        + "&httpMethodRestrict=GET,OPTIONS").routeId("Selector").choice()
-                        .when(header(SPARQL_QUERY).isEqualTo("rdf:type")).setHeader(HTTP_METHOD)
-                        .constant("POST").setHeader(CONTENT_TYPE)
+                        + "&httpMethodRestrict=GET,OPTIONS").routeId("Selector")
+                        .choice()
+                        .when(header(SPARQL_QUERY).isEqualTo("rdf:type"))
+                        .setHeader(HTTP_METHOD)
+                        .constant("POST")
+                        .setHeader(CONTENT_TYPE)
                         .constant("application/x-www-form-urlencoded; " + "charset=utf-8")
-                        .setHeader(HTTP_ACCEPT).constant(contentTypeNTriples).process(e -> {
-                    e.getIn().setBody(sparqlConstruct(
-                            Query.getEventQuery("events-type.rq", Query.getSet(e))));
-                    LOGGER.info("Node type {}", e.getIn().getHeader("node").toString());
-                    e.getIn().setHeader("named.graph", e.getIn().getHeader("node").toString());
-                }).to("http4:{{activitystream.base}}?useSystemProperties=true&bridgeEndpoint=true")
-                        .filter(header(HTTP_RESPONSE_CODE).isEqualTo(200)).setHeader(CONTENT_TYPE)
+                        .setHeader(HTTP_ACCEPT)
+                        .constant(contentTypeNTriples)
+                        .process(e -> {
+                            e.getIn()
+                                    .setBody(sparqlConstruct(Query.getEventQuery("events-type.rq", Query.getSet(e))));
+                            LOGGER.info(
+                                    "Node type {}", e.getIn()
+                                            .getHeader("node")
+                                            .toString());
+                            e.getIn()
+                                    .setHeader("named.graph", e.getIn()
+                                            .getHeader("node")
+                                            .toString());
+                        })
+                        .to("http4:{{activitystream.base}}?useSystemProperties=true&bridgeEndpoint=true")
+                        .filter(header(HTTP_RESPONSE_CODE).isEqualTo(200))
+                        .setHeader(CONTENT_TYPE)
                         .constant(contentTypeNTriples)
                         .log(INFO, LOGGER, "Getting query results as n-triples")
                         .to("direct:getEvents");
 
                 from("direct:getEvents").routeId("EventProcessor")
-                        .log(INFO, LOGGER, "Getting Subjects From Events").split()
-                        .method("resourceMessageList", "getResources").to("direct:update.dataset");
+                        .log(INFO, LOGGER, "Getting Subjects From Events")
+                        .split()
+                        .method("resourceMessageList", "getResources")
+                        .to("direct:update.dataset");
 
-                from("direct:update.dataset").routeId("DatasetUpdater").setHeader(HTTP_METHOD)
-                        .constant("GET").setHeader(HTTP_ACCEPT).constant(contentTypeNTriples)
-                        .setHeader("resource.base", constant("http://{{resource.base}}"))
+                from("direct:update.dataset").routeId("DatasetUpdater")
+                        .setHeader(HTTP_METHOD)
+                        .constant("GET")
+                        .setHeader(HTTP_ACCEPT)
+                        .constant(contentTypeNTriples)
+                        .setHeader("resource.base", constant("http://{{resources.base}}"))
                         .to("http4:trellis:8080")
                         .log(INFO, LOGGER, "Indexing Subject " + "${headers[CamelHttpUri]}")
                         .process(exchange -> {
                             final JenaGraph graph = rdf.createGraph();
-                            service.read(exchange.getIn().getBody(InputStream.class), null,
-                                    NTRIPLES).forEachOrdered(graph::add);
-                            try (RDFConnection conn = RDFConnectionFactory.connect(
-                                    exchange.getIn().getHeader("resource.base").toString())) {
+                            service.read(exchange.getIn()
+                                    .getBody(InputStream.class), null, NTRIPLES)
+                                    .forEachOrdered(graph::add);
+                            try (RDFConnection conn = RDFConnectionFactory.connect(exchange.getIn()
+                                    .getHeader("resource.base")
+                                    .toString())) {
                                 Txn.executeWrite(conn, () -> {
-                                    conn.load(
-                                            exchange.getIn().getHeader("CamelHttpUri").toString(),
-                                            graph.asJenaModel());
+                                    conn.load(exchange.getIn()
+                                            .getHeader("CamelHttpUri")
+                                            .toString(), graph.asJenaModel());
                                 });
                                 conn.commit();
                             }
@@ -130,7 +149,8 @@ public class SelectorTest {
     }
 
     public static Context createInitialContext() throws Exception {
-        InputStream in = SelectorTest.class.getClassLoader().getResourceAsStream("jndi.properties");
+        InputStream in = SelectorTest.class.getClassLoader()
+                .getResourceAsStream("jndi.properties");
         try {
             Properties properties = new Properties();
             properties.load(in);

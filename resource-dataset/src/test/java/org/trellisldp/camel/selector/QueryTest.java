@@ -14,6 +14,8 @@
 
 package org.trellisldp.camel.selector;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 import org.junit.Test;
 
@@ -22,6 +24,6 @@ public class QueryTest {
     @Test
     public void testQuery() throws IOException {
         String q =
-                Query.getEventQuery("events-type.rq", "http://iiif.io/api/presentation/2#Manifest");
+                Query.getEventQuery("canvas-anno.rq", "1671");
     }
 }
